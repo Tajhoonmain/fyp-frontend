@@ -11,7 +11,7 @@ interface LocalizationContextType {
   debugGPS: boolean;
   setLocalizationMode: (mode: LocalizationMode) => void;
   updatePosition: (position: Coordinate) => void;
-  captureAndLocalize: () => Promise<void>;
+  captureAndLocalize: (imageData?: string) => Promise<void>;
   startSimulation: (targetPath: Coordinate[]) => void;
   stopSimulation: () => void;
   toggleDebugGPS: () => void;
@@ -68,7 +68,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
     }
   }, []);
 
-  const captureAndLocalize = useCallback(async () => {
+  const captureAndLocalize = useCallback(async (imageData?: string) => {
     setIsCapturing(true);
     setCaptureConfidence(null);
 
@@ -80,13 +80,13 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
       let backendSuccess = false;
       
       try {
-        // In real implementation, you'd capture actual camera image here
-        const mockImageData = "base64_encoded_image_data";
+        // Use provided image data or mock data
+        const imageToSend = imageData || "base64_encoded_image_data";
         
         const response = await fetch('http://localhost:8000/api/classify-location', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: mockImageData }),
+          body: JSON.stringify({ image: imageToSend }),
         });
 
         if (response.ok) {

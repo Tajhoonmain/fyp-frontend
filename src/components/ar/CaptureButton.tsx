@@ -6,6 +6,10 @@ import { useLocalization } from '@/contexts/LocalizationContext';
 export function CaptureButton() {
   const { captureAndLocalize, isCapturing } = useLocalization();
 
+  const handleClick = () => {
+    captureAndLocalize();
+  };
+
   return (
     <motion.button
       className="absolute bottom-6 right-6 z-30 w-16 h-16 rounded-full backdrop-blur-[20px] flex items-center justify-center"
@@ -15,7 +19,7 @@ export function CaptureButton() {
         boxShadow: '0 0 20px rgba(0, 229, 255, 0.4)',
       }}
       whileTap={{ scale: 0.9 }}
-      onClick={captureAndLocalize}
+      onClick={handleClick}
       disabled={isCapturing}
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
