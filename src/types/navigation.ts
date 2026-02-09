@@ -16,7 +16,7 @@ export interface Destination {
   waypoints: Coordinate[];
 }
 
-export type LocalizationMode = 'Simulated' | 'Backend CV' | 'GPS' | 'AR (Stubbed)';
+export type LocalizationMode = 'Simulated' | 'Backend CV' | 'GPS' | 'MIDAS Classification' | 'AR (Stubbed)';
 
 export interface BackendLocalizationResponse {
   x: number;

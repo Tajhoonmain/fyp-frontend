@@ -16,6 +16,7 @@ interface LocalizationContextType {
   stopSimulation: () => void;
   toggleDebugGPS: () => void;
   getCurrentGPSPosition: () => Promise<void>;
+  getDirectionsFromMIDAS: (from: Coordinate, to: Coordinate) => Promise<any>;
 }
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
@@ -75,36 +76,43 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
       // Simulate camera capture delay
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Try backend first, then fallback to GPS
+      // Try MIDAS backend for location classification
       let backendSuccess = false;
       
       try {
-        const response = await fetch('/api/localize', {
+        // In real implementation, you'd capture actual camera image here
+        const mockImageData = "base64_encoded_image_data";
+        
+        const response = await fetch('http://localhost:8000/api/classify-location', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ frame: 'simulated_frame_data' }),
+          body: JSON.stringify({ image: mockImageData }),
         });
 
         if (response.ok) {
-          const data: BackendLocalizationResponse = await response.json();
+          const data = await response.json();
           setCaptureConfidence(data.confidence);
           
           if (data.confidence >= 0.6) {
-            setCurrentPosition({ x: data.x, y: data.y });
-            setLocalizationMode('Backend CV');
+            // Convert GPS to local coordinates
+            const localX = (data.coordinates.lng - 73.0479) * 111320;
+            const localY = (33.6844 - data.coordinates.lat) * 111320;
+            
+            setCurrentPosition({ x: localX, y: localY });
+            setLocalizationMode('MIDAS Classification');
             backendSuccess = true;
           }
         }
       } catch (backendError) {
-        console.log('Backend not available, falling back to GPS');
+        console.log('MIDAS backend not available, falling back to GPS');
       }
 
-      // Fallback to GPS if backend failed
+      // Fallback to GPS if MIDAS failed
       if (!backendSuccess) {
         await getCurrentGPSPosition();
       }
     } catch (error) {
-      console.error('Localization failed:', error);
+      console.error('Location classification failed:', error);
       // Final fallback to GPS
       await getCurrentGPSPosition();
     } finally {
@@ -122,6 +130,34 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
   const stopSimulation = useCallback(() => {
     setSimulationPath([]);
     setCurrentPathIndex(0);
+  }, []);
+
+  const getDirectionsFromMIDAS = useCallback(async (from: Coordinate, to: Coordinate) => {
+    try {
+      // Convert local coordinates back to GPS for backend
+      const fromGPS = {
+        lat: 33.6844 - (from.y / 111320),
+        lng: 73.0479 + (from.x / 111320)
+      };
+      const toGPS = {
+        lat: 33.6844 - (to.y / 111320),
+        lng: 73.0479 + (to.x / 111320)
+      };
+
+      const response = await fetch('http://localhost:8000/api/get-directions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ from: fromGPS, to: toGPS }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return data;
+      }
+    } catch (error) {
+      console.error('Failed to get directions from MIDAS:', error);
+      return null;
+    }
   }, []);
 
   const toggleDebugGPS = useCallback(() => {
@@ -167,6 +203,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
         stopSimulation,
         toggleDebugGPS,
         getCurrentGPSPosition,
+        getDirectionsFromMIDAS,
       }}
     >
       {children}
