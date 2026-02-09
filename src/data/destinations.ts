@@ -1,66 +1,58 @@
 import { Destination } from '@/types/navigation';
 
-// GIKI Campus GPS coordinates (approximate)
-const GIKI_CENTER = { lat: 33.6844, lng: 73.0479 };
-
-// Convert GPS to local coordinates
-function gpsToLocal(lat: number, lng: number): { x: number; y: number } {
-  const x = (lng - GIKI_CENTER.lng) * 111320;
-  const y = (GIKI_CENTER.lat - lat) * 111320;
-  return { x, y };
-}
-
+// GIKI Campus local coordinates (matching backend coordinate system)
+// These coordinates should align with your giki_graph.json nodes
 export const destinations: Destination[] = [
   {
     id: 'fcse',
     name: 'Faculty of Computer Science & Engineering',
     building: 'FCSE',
-    coordinate: gpsToLocal(33.6852, 73.0485), // FCSE building
+    coordinate: { x: 1377, y: 279 }, // Node from giki_graph.json
     waypoints: [
-      gpsToLocal(33.6846, 73.0479), // Entrance
-      gpsToLocal(33.6852, 73.0485), // FCSE
-    ],
-  },
-  {
-    id: 'fme',
-    name: 'Faculty of Mechanical Engineering',
-    building: 'FME',
-    coordinate: gpsToLocal(33.6848, 73.0475), // FME building
-    waypoints: [
-      gpsToLocal(33.6846, 73.0479), // Entrance
-      gpsToLocal(33.6848, 73.0475), // FME
+      { x: 1200, y: 200 }, // Entrance area
+      { x: 1377, y: 279 }, // FCSE building
     ],
   },
   {
     id: 'library',
     name: 'Central Library',
     building: 'Library',
-    coordinate: gpsToLocal(33.6840, 73.0482), // Library
+    coordinate: { x: 890, y: 450 }, // Approximate library location
     waypoints: [
-      gpsToLocal(33.6846, 73.0479), // Start point
-      gpsToLocal(33.6840, 73.0482), // Library
+      { x: 1200, y: 200 }, // Start point
+      { x: 890, y: 450 }, // Library
+    ],
+  },
+  {
+    id: 'fme',
+    name: 'Faculty of Mechanical Engineering',
+    building: 'FME',
+    coordinate: { x: 1100, y: 350 }, // Approximate FME location
+    waypoints: [
+      { x: 1200, y: 200 }, // Start point
+      { x: 1100, y: 350 }, // FME
     ],
   },
   {
     id: 'cafeteria',
     name: 'Main Cafeteria',
     building: 'Cafeteria',
-    coordinate: gpsToLocal(33.6838, 73.0472), // Cafeteria
+    coordinate: { x: 950, y: 600 }, // Approximate cafeteria location
     waypoints: [
-      gpsToLocal(33.6846, 73.0479), // Start point
-      gpsToLocal(33.6838, 73.0472), // Cafeteria
+      { x: 1200, y: 200 }, // Start point
+      { x: 950, y: 600 }, // Cafeteria
     ],
   },
   {
     id: 'acb',
     name: 'Academic Block',
     building: 'ACB',
-    coordinate: gpsToLocal(33.6850, 73.0490), // Academic Block
+    coordinate: { x: 1500, y: 400 }, // Approximate ACB location
     waypoints: [
-      gpsToLocal(33.6846, 73.0479), // Start point
-      gpsToLocal(33.6850, 73.0490), // ACB
+      { x: 1200, y: 200 }, // Start point
+      { x: 1500, y: 400 }, // ACB
     ],
   },
 ];
 
-export const defaultStartPosition = gpsToLocal(33.6846, 73.0479); // Campus entrance
+export const defaultStartPosition = { x: 1200, y: 200 }; // Campus entrance/starting point

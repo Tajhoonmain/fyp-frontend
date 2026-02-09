@@ -22,7 +22,7 @@ interface LocalizationContextType {
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
 export function LocalizationProvider({ children }: { children: React.ReactNode }) {
-  const [currentPosition, setCurrentPosition] = useState<Coordinate>({ x: 10, y: 10 });
+  const [currentPosition, setCurrentPosition] = useState<Coordinate>({ x: 1200, y: 200 }); // Start at campus entrance
   const [localizationMode, setLocalizationMode] = useState<LocalizationMode>('GPS'); // Start with GPS
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureConfidence, setCaptureConfidence] = useState<number | null>(null);
@@ -154,13 +154,16 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
           setCaptureConfidence(data.confidence);
           
           if (data.confidence >= 0.6) {
-            // Convert GPS to local coordinates
-            const localX = (data.coordinates.lng - 73.0479) * 111320;
-            const localY = (33.6844 - data.coordinates.lat) * 111320;
-            
-            setCurrentPosition({ x: localX, y: localY });
+            // Use backend coordinates directly (already in local coordinate system)
+            setCurrentPosition({ 
+              x: data.coordinates.x, 
+              y: data.coordinates.y 
+            });
             setLocalizationMode('MIDAS Classification');
             backendSuccess = true;
+            
+            console.log(`MIDAS Location: ${data.location_name}`);
+            console.log(`Local Position: x=${data.coordinates.x}, y=${data.coordinates.y}`);
           }
         }
       } catch (backendError) {
@@ -179,7 +182,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
       setIsCapturing(false);
       setTimeout(() => setCaptureConfidence(null), 3000);
     }
-  }, [currentPosition]);
+  }, []);
 
   const startSimulation = useCallback((targetPath: Coordinate[]) => {
     // Disable automatic simulation - use real GPS/camera location
@@ -196,24 +199,19 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
 
   const getDirectionsFromMIDAS = useCallback(async (from: Coordinate, to: Coordinate) => {
     try {
-      // Convert local coordinates back to GPS for backend
-      const fromGPS = {
-        lat: 33.6844 - (from.y / 111320),
-        lng: 73.0479 + (from.x / 111320)
-      };
-      const toGPS = {
-        lat: 33.6844 - (to.y / 111320),
-        lng: 73.0479 + (to.x / 111320)
-      };
-
+      // Send coordinates directly to backend (already in local coordinate system)
       const response = await fetch('http://localhost:8000/api/get-directions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ from: fromGPS, to: toGPS }),
+        body: JSON.stringify({ 
+          from: { x: from.x, y: from.y },
+          to: { x: to.x, y: to.y }
+        }),
       });
 
       if (response.ok) {
         const data = await response.json();
+        console.log('MIDAS Directions:', data);
         return data;
       }
     } catch (error) {

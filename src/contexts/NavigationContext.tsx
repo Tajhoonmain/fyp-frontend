@@ -11,7 +11,7 @@ interface NavigationContextType extends NavigationState {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 export function NavigationProvider({ children }: { children: React.ReactNode }) {
-  const { currentPosition, startSimulation, stopSimulation } = useLocalization();
+  const { currentPosition, startSimulation, stopSimulation, getDirectionsFromMIDAS } = useLocalization();
   const [navigationState, setNavigationState] = useState<NavigationState>({
     isNavigating: false,
     currentDestination: null,
@@ -20,7 +20,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     hasArrived: false,
   });
 
-  const startNavigation = useCallback((destination: Destination) => {
+  const startNavigation = useCallback(async (destination: Destination) => {
     setNavigationState({
       isNavigating: true,
       currentDestination: destination,
@@ -28,8 +28,26 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
       distanceToWaypoint: 0,
       hasArrived: false,
     });
-    startSimulation(destination.waypoints);
-  }, [startSimulation]);
+
+    // Try to get directions from MIDAS backend
+    try {
+      const directions = await getDirectionsFromMIDAS(currentPosition, destination.coordinate);
+      
+      if (directions && directions.route) {
+        console.log('Using MIDAS backend directions:', directions.route);
+        // Use backend-calculated route
+        startSimulation(directions.route);
+      } else {
+        console.log('MIDAS backend unavailable, using predefined waypoints');
+        // Fallback to predefined waypoints
+        startSimulation(destination.waypoints);
+      }
+    } catch (error) {
+      console.error('Failed to get MIDAS directions, using fallback:', error);
+      // Fallback to predefined waypoints
+      startSimulation(destination.waypoints);
+    }
+  }, [currentPosition, startSimulation, getDirectionsFromMIDAS]);
 
   const stopNavigation = useCallback(() => {
     setNavigationState({
