@@ -22,7 +22,14 @@ export function MapMateApp() {
   const [showMap, setShowMap] = useState(true);
   const { captureAndLocalize } = useLocalization();
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('MapMateApp mounted');
+    console.log('Environment:', import.meta.env);
+  }, []);
+
   const handleCameraCapture = (imageData: string) => {
+    console.log('Camera capture triggered');
     // Send image to backend for localization
     captureAndLocalize(imageData);
     setIsCameraOpen(false);

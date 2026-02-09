@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+</head>
+<body>
+    <h1>MapMate is Loading...</h1>
+    <div id="root">Loading app...</div>
+    <script>
+        console.log('Test page loaded');
+        // Test if basic React can load
+        setTimeout(() => {
+            if (document.getElementById('root').innerHTML === 'Loading app...') {
+                document.getElementById('root').innerHTML = '<h2 style="color: red;">App failed to load</h2>';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>
