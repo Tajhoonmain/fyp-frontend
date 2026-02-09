@@ -22,14 +22,70 @@ interface LocalizationContextType {
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
 export function LocalizationProvider({ children }: { children: React.ReactNode }) {
-  const [currentPosition, setCurrentPosition] = useState<Coordinate>({ x: 10, y: 10 }); // Start slightly away from origin
-  const [localizationMode, setLocalizationMode] = useState<LocalizationMode>('Simulated');
+  const [currentPosition, setCurrentPosition] = useState<Coordinate>({ x: 10, y: 10 });
+  const [localizationMode, setLocalizationMode] = useState<LocalizationMode>('GPS'); // Start with GPS
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureConfidence, setCaptureConfidence] = useState<number | null>(null);
   const [debugGPS, setDebugGPS] = useState(false);
   const [simulationPath, setSimulationPath] = useState<Coordinate[]>([]);
   const [currentPathIndex, setCurrentPathIndex] = useState(0);
   const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Get GPS location on component mount and track continuously
+  useEffect(() => {
+    const initializeGPS = async () => {
+      try {
+        await getCurrentGPSPosition();
+        // Start continuous GPS tracking
+        startGPSTracking();
+      } catch (error) {
+        console.error('Failed to initialize GPS:', error);
+        // Fallback to simulated position
+        setLocalizationMode('Simulated');
+      }
+    };
+
+    initializeGPS();
+
+    return () => {
+      // Cleanup GPS tracking on unmount
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
+  let watchId: number | null = null;
+
+  const startGPSTracking = () => {
+    if (!navigator.geolocation) return;
+
+    watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const { latitude, longitude, accuracy } = position.coords;
+        
+        // Convert GPS to local coordinates (using GIKI reference)
+        const localX = (longitude - 73.0479) * 111320;
+        const localY = (33.6844 - latitude) * 111320;
+        
+        setCurrentPosition({ x: localX, y: localY });
+        setLocalizationMode('GPS');
+        setCaptureConfidence(Math.max(0.5, 1 - (accuracy / 100)));
+        
+        console.log(`GPS Update: ${latitude.toFixed(6)}, ${longitude.toFixed(6)} (accuracy: ${accuracy}m)`);
+        console.log(`Local Position: x=${localX.toFixed(1)}, y=${localY.toFixed(1)}`);
+      },
+      (error) => {
+        console.error('GPS tracking failed:', error);
+        setCaptureConfidence(0.3);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 2000, // Use very recent positions
+      }
+    );
+  };
 
   const updatePosition = useCallback((position: Coordinate) => {
     setCurrentPosition(position);
@@ -38,35 +94,38 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
   const getCurrentGPSPosition = useCallback(async () => {
     if (!navigator.geolocation) {
       console.error('Geolocation is not supported by this browser');
-      return;
+      throw new Error('Geolocation not supported');
     }
 
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
+    return new Promise<void>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude, accuracy } = position.coords;
+          
+          // Convert GPS to local coordinates (using GIKI reference)
+          const localX = (longitude - 73.0479) * 111320;
+          const localY = (33.6844 - latitude) * 111320;
+          
+          setCurrentPosition({ x: localX, y: localY });
+          setLocalizationMode('GPS');
+          setCaptureConfidence(Math.max(0.5, 1 - (accuracy / 100)));
+          
+          console.log(`GPS Position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+          console.log(`Local Position: x=${localX.toFixed(1)}, y=${localY.toFixed(1)}`);
+          resolve();
+        },
+        (error) => {
+          console.error('GPS positioning failed:', error);
+          setCaptureConfidence(0.3);
+          reject(error);
+        },
+        {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 60000,
-        });
-      });
-
-      const { latitude, longitude, accuracy } = position.coords;
-      
-      // Convert GPS coordinates to local coordinate system
-      // This is a simplified conversion - you'll need to adjust based on your map's coordinate system
-      const localX = (longitude - 73.0479) * 111320; // Approximate conversion to meters
-      const localY = (33.6844 - latitude) * 111320; // Approximate conversion to meters
-      
-      setCurrentPosition({ x: localX, y: localY });
-      setLocalizationMode('GPS');
-      setCaptureConfidence(Math.max(0.5, 1 - (accuracy / 100))); // Confidence based on GPS accuracy
-      
-      console.log(`GPS Position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
-    } catch (error) {
-      console.error('GPS positioning failed:', error);
-      // Fallback to simulated position with lower confidence
-      setCaptureConfidence(0.3);
-    }
+          maximumAge: 5000,
+        }
+      );
+    });
   }, []);
 
   const captureAndLocalize = useCallback(async (imageData?: string) => {

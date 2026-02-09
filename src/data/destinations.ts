@@ -1,90 +1,66 @@
 import { Destination } from '@/types/navigation';
 
+// GIKI Campus GPS coordinates (approximate)
+const GIKI_CENTER = { lat: 33.6844, lng: 73.0479 };
+
+// Convert GPS to local coordinates
+function gpsToLocal(lat: number, lng: number): { x: number; y: number } {
+  const x = (lng - GIKI_CENTER.lng) * 111320;
+  const y = (GIKI_CENTER.lat - lat) * 111320;
+  return { x, y };
+}
+
 export const destinations: Destination[] = [
   {
     id: 'fcse',
     name: 'Faculty of Computer Science & Engineering',
     building: 'FCSE',
-    coordinate: { x: 100, y: 100 },
+    coordinate: gpsToLocal(33.6852, 73.0485), // FCSE building
     waypoints: [
-      { x: 30, y: 30 },
-      { x: 60, y: 60 },
-      { x: 100, y: 100 },
+      gpsToLocal(33.6846, 73.0479), // Entrance
+      gpsToLocal(33.6852, 73.0485), // FCSE
     ],
   },
   {
     id: 'fme',
     name: 'Faculty of Mechanical Engineering',
     building: 'FME',
-    coordinate: { x: 50, y: 30 },
+    coordinate: gpsToLocal(33.6848, 73.0475), // FME building
     waypoints: [
-      { x: 20, y: 10 },
-      { x: 35, y: 20 },
-      { x: 50, y: 30 },
-    ],
-  },
-  {
-    id: 'fmce',
-    name: 'Faculty of Materials & Chemical Engineering',
-    building: 'FMCE',
-    coordinate: { x: 100, y: 50 },
-    waypoints: [
-      { x: 20, y: 10 },
-      { x: 35, y: 20 },
-      { x: 50, y: 30 },
-      { x: 75, y: 40 },
-      { x: 100, y: 50 },
-    ],
-  },
-  {
-    id: 'fbs',
-    name: 'Faculty of Basic Sciences',
-    building: 'FBS',
-    coordinate: { x: 30, y: 80 },
-    waypoints: [
-      { x: 20, y: 20 },
-      { x: 25, y: 50 },
-      { x: 30, y: 80 },
-    ],
-  },
-  {
-    id: 'acb',
-    name: 'Academic Block',
-    building: 'ACB',
-    coordinate: { x: 120, y: 90 },
-    waypoints: [
-      { x: 20, y: 20 },
-      { x: 50, y: 40 },
-      { x: 80, y: 60 },
-      { x: 100, y: 75 },
-      { x: 120, y: 90 },
+      gpsToLocal(33.6846, 73.0479), // Entrance
+      gpsToLocal(33.6848, 73.0475), // FME
     ],
   },
   {
     id: 'library',
     name: 'Central Library',
     building: 'Library',
-    coordinate: { x: 150, y: 40 },
+    coordinate: gpsToLocal(33.6840, 73.0482), // Library
     waypoints: [
-      { x: 30, y: 10 },
-      { x: 60, y: 15 },
-      { x: 90, y: 20 },
-      { x: 120, y: 30 },
-      { x: 150, y: 40 },
+      gpsToLocal(33.6846, 73.0479), // Start point
+      gpsToLocal(33.6840, 73.0482), // Library
     ],
   },
   {
     id: 'cafeteria',
     name: 'Main Cafeteria',
     building: 'Cafeteria',
-    coordinate: { x: 80, y: 120 },
+    coordinate: gpsToLocal(33.6838, 73.0472), // Cafeteria
     waypoints: [
-      { x: 20, y: 30 },
-      { x: 40, y: 60 },
-      { x: 60, y: 90 },
-      { x: 80, y: 120 },
+      gpsToLocal(33.6846, 73.0479), // Start point
+      gpsToLocal(33.6838, 73.0472), // Cafeteria
+    ],
+  },
+  {
+    id: 'acb',
+    name: 'Academic Block',
+    building: 'ACB',
+    coordinate: gpsToLocal(33.6850, 73.0490), // Academic Block
+    waypoints: [
+      gpsToLocal(33.6846, 73.0479), // Start point
+      gpsToLocal(33.6850, 73.0490), // ACB
     ],
   },
 ];
 
-export const defaultStartPosition = { x: 0, y: 0 }; // FCSE
+export const defaultStartPosition = gpsToLocal(33.6846, 73.0479); // Campus entrance
