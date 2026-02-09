@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Coordinate, LocalizationMode, BackendLocalizationResponse } from '@/types/navigation';
 import { defaultStartPosition } from '@/data/destinations';
 import { moveTowardsPoint } from '@/utils/navigation';
@@ -22,13 +22,14 @@ interface LocalizationContextType {
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
 
 export function LocalizationProvider({ children }: { children: React.ReactNode }) {
-  const [currentPosition, setCurrentPosition] = useState<Coordinate>(defaultStartPosition);
+  const [currentPosition, setCurrentPosition] = useState<Coordinate>({ x: 10, y: 10 }); // Start slightly away from origin
   const [localizationMode, setLocalizationMode] = useState<LocalizationMode>('Simulated');
   const [isCapturing, setIsCapturing] = useState(false);
   const [captureConfidence, setCaptureConfidence] = useState<number | null>(null);
   const [debugGPS, setDebugGPS] = useState(false);
   const [simulationPath, setSimulationPath] = useState<Coordinate[]>([]);
   const [currentPathIndex, setCurrentPathIndex] = useState(0);
+  const simulationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const updatePosition = useCallback((position: Coordinate) => {
     setCurrentPosition(position);

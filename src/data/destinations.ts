@@ -5,8 +5,12 @@ export const destinations: Destination[] = [
     id: 'fcse',
     name: 'Faculty of Computer Science & Engineering',
     building: 'FCSE',
-    coordinate: { x: 0, y: 0 },
-    waypoints: [{ x: 0, y: 0 }],
+    coordinate: { x: 100, y: 100 },
+    waypoints: [
+      { x: 30, y: 30 },
+      { x: 60, y: 60 },
+      { x: 100, y: 100 },
+    ],
   },
   {
     id: 'fme',
