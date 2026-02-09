@@ -15,6 +15,7 @@ interface LocalizationContextType {
   startSimulation: (targetPath: Coordinate[]) => void;
   stopSimulation: () => void;
   toggleDebugGPS: () => void;
+  getCurrentGPSPosition: () => Promise<void>;
 }
 
 const LocalizationContext = createContext<LocalizationContextType | undefined>(undefined);
@@ -32,6 +33,40 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
     setCurrentPosition(position);
   }, []);
 
+  const getCurrentGPSPosition = useCallback(async () => {
+    if (!navigator.geolocation) {
+      console.error('Geolocation is not supported by this browser');
+      return;
+    }
+
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000,
+        });
+      });
+
+      const { latitude, longitude, accuracy } = position.coords;
+      
+      // Convert GPS coordinates to local coordinate system
+      // This is a simplified conversion - you'll need to adjust based on your map's coordinate system
+      const localX = (longitude - 73.0479) * 111320; // Approximate conversion to meters
+      const localY = (33.6844 - latitude) * 111320; // Approximate conversion to meters
+      
+      setCurrentPosition({ x: localX, y: localY });
+      setLocalizationMode('GPS');
+      setCaptureConfidence(Math.max(0.5, 1 - (accuracy / 100))); // Confidence based on GPS accuracy
+      
+      console.log(`GPS Position: ${latitude}, ${longitude} (accuracy: ${accuracy}m)`);
+    } catch (error) {
+      console.error('GPS positioning failed:', error);
+      // Fallback to simulated position with lower confidence
+      setCaptureConfidence(0.3);
+    }
+  }, []);
+
   const captureAndLocalize = useCallback(async () => {
     setIsCapturing(true);
     setCaptureConfidence(null);
@@ -40,35 +75,38 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
       // Simulate camera capture delay
       await new Promise(resolve => setTimeout(resolve, 300));
 
-      // Simulate backend call
-      const response = await fetch('/api/localize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ frame: 'simulated_frame_data' }),
-      }).catch(() => {
-        // If backend not available, simulate response
-        return {
-          ok: true,
-          json: async () => ({
-            x: currentPosition.x + (Math.random() - 0.5) * 10,
-            y: currentPosition.y + (Math.random() - 0.5) * 10,
-            building: 'FCSE',
-            confidence: 0.65 + Math.random() * 0.3,
-          }),
-        };
-      });
+      // Try backend first, then fallback to GPS
+      let backendSuccess = false;
+      
+      try {
+        const response = await fetch('/api/localize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ frame: 'simulated_frame_data' }),
+        });
 
-      if (response.ok) {
-        const data: BackendLocalizationResponse = await response.json();
-        setCaptureConfidence(data.confidence);
-        
-        if (data.confidence >= 0.6) {
-          setCurrentPosition({ x: data.x, y: data.y });
-          setLocalizationMode('Backend CV');
+        if (response.ok) {
+          const data: BackendLocalizationResponse = await response.json();
+          setCaptureConfidence(data.confidence);
+          
+          if (data.confidence >= 0.6) {
+            setCurrentPosition({ x: data.x, y: data.y });
+            setLocalizationMode('Backend CV');
+            backendSuccess = true;
+          }
         }
+      } catch (backendError) {
+        console.log('Backend not available, falling back to GPS');
+      }
+
+      // Fallback to GPS if backend failed
+      if (!backendSuccess) {
+        await getCurrentGPSPosition();
       }
     } catch (error) {
       console.error('Localization failed:', error);
+      // Final fallback to GPS
+      await getCurrentGPSPosition();
     } finally {
       setIsCapturing(false);
       setTimeout(() => setCaptureConfidence(null), 3000);
@@ -128,6 +166,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
         startSimulation,
         stopSimulation,
         toggleDebugGPS,
+        getCurrentGPSPosition,
       }}
     >
       {children}
