@@ -10,7 +10,7 @@ export function DebugOverlay() {
     <AnimatePresence>
       {debugGPS && (
         <motion.div
-          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 px-4 py-3 rounded-lg backdrop-blur-[20px]"
+          className="absolute bottom-32 right-6 z-30 px-4 py-3 rounded-lg backdrop-blur-[20px]"
           style={{
             background: 'rgba(15, 25, 35, 0.9)',
             border: '1px solid rgba(0, 229, 255, 0.2)',

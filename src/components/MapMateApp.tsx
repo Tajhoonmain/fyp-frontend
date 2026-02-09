@@ -67,14 +67,15 @@ function MapMateAppContent() {
       {/* View Toggle Button */}
       <button
         onClick={() => setShowMap(!showMap)}
-        className="absolute top-4 left-4 px-3 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-colors z-20"
+        className="absolute top-4 left-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
         style={{
-          background: 'rgba(15, 25, 35, 0.8)',
-          border: '1px solid rgba(0, 229, 255, 0.3)',
-          color: '#00E5FF'
+          background: 'rgba(15, 25, 35, 0.9)',
+          border: '1px solid rgba(0, 229, 255, 0.4)',
+          color: '#00E5FF',
+          boxShadow: '0 4px 20px rgba(0, 229, 255, 0.2)',
         }}
       >
-        {showMap ? 'AR View' : 'Map View'}
+        {showMap ? '🎯 AR View' : '🗺️ Map View'}
       </button>
 
       <InfoButton onClick={() => setIsAboutOpen(true)} />
@@ -83,11 +84,11 @@ function MapMateAppContent() {
       {/* Updated Capture Button */}
       <button
         onClick={() => setIsCameraOpen(true)}
-        className="absolute bottom-6 right-6 z-30 w-16 h-16 rounded-full backdrop-blur-[20px] flex items-center justify-center"
+        className="absolute bottom-6 right-6 z-30 w-16 h-16 rounded-full backdrop-blur-[20px] flex items-center justify-center transition-all"
         style={{
-          background: 'rgba(15, 25, 35, 0.7)',
-          border: '1px solid rgba(0, 229, 255, 0.3)',
-          boxShadow: '0 0 20px rgba(0, 229, 255, 0.4)',
+          background: 'rgba(15, 25, 35, 0.9)',
+          border: '1px solid rgba(0, 229, 255, 0.4)',
+          boxShadow: '0 4px 20px rgba(0, 229, 255, 0.3)',
         }}
       >
         <svg

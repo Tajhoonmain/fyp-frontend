@@ -123,9 +123,11 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
   }, [currentPosition]);
 
   const startSimulation = useCallback((targetPath: Coordinate[]) => {
+    // Disable automatic simulation - use real GPS/camera location
+    console.log('Navigation started - using real location instead of simulation');
     setSimulationPath(targetPath);
     setCurrentPathIndex(0);
-    setLocalizationMode('Simulated');
+    setLocalizationMode('GPS'); // Use GPS mode instead of simulated
   }, []);
 
   const stopSimulation = useCallback(() => {

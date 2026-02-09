@@ -16,15 +16,15 @@ export function TrackingIndicator() {
 
   return (
     <motion.div
-      className="absolute top-6 left-6 z-30"
-      initial={{ opacity: 0, x: -20 }}
+      className="absolute top-6 right-6 z-30"
+      initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.3 }}
     >
       <div
         className="px-4 py-2 rounded-full backdrop-blur-[20px] flex items-center gap-2"
         style={{
-          background: 'rgba(15, 25, 35, 0.7)',
+          background: 'rgba(15, 25, 35, 0.9)',
           border: `1px solid ${statusColor}40`,
           boxShadow: `0 0 20px ${statusColor}40`,
         }}
