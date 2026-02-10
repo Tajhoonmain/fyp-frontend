@@ -2,14 +2,39 @@ import json
 import math
 import heapq
 import matplotlib.pyplot as plt
+import os
 
 # =========================
 # 1. CONFIGURATION
 # =========================
-GRAPH_PATH = r"C:\WOLF\Private\VS_CODE\FYP_TEST\TEST_Hybrid\maps\campus_graph.json"
-IMG_PATH = r"C:\WOLF\Private\VS_CODE\FYP_TEST\TEST_Hybrid\maps\giki_map_fixed.png"
+def get_graph_path():
+    """Get the correct graph file path"""
+    # Try campus_graph.json first (your actual file)
+    graph_path = os.path.join(os.path.dirname(__file__), 'campus_graph.json')
+    if os.path.exists(graph_path):
+        return graph_path
+    
+    # Fallback to giki_graph.json
+    graph_path = os.path.join(os.path.dirname(__file__), 'giki_graph.json')
+    if os.path.exists(graph_path):
+        return graph_path
+    
+    print("Warning: No campus graph file found")
+    return None
 
-# ✅ YOUR GROUND TRUTH
+def get_map_path():
+    """Get the correct map image path"""
+    map_path = os.path.join(os.path.dirname(__file__), 'giki_map_fixed.png')
+    if os.path.exists(map_path):
+        return map_path
+    
+    print("Warning: No map image found")
+    return None
+
+GRAPH_PATH = get_graph_path()
+IMG_PATH = get_map_path()
+
+# YOUR GROUND TRUTH
 LOCATIONS = {
     "Admin": "N55",
     "FCSE": "N58",
@@ -28,8 +53,7 @@ LOCATIONS = {
 # =========================
 class CampusNavigator:
     def __init__(self, graph_file):
-        with open(graph_file, 'r') as f:
-            self.data = json.load(f)
+        self.data = self._load_campus_graph()
         
         self.nodes = self.data["nodes"]
         self.adj = {nid: [] for nid in self.nodes}
@@ -40,6 +64,20 @@ class CampusNavigator:
                 dist = self._dist(u, v)
                 self.adj[u].append((v, dist))
                 self.adj[v].append((u, dist))
+
+    def _load_campus_graph(self) -> dict:
+        """Load campus graph from JSON file"""
+        graph_path = os.path.join(os.path.dirname(__file__), 'campus_graph.json')
+        
+        try:
+            with open(graph_path, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Warning: Campus graph file not found at {graph_path}")
+            return {"nodes": [], "edges": []}
+        except json.JSONDecodeError as e:
+            print(f"Error parsing campus graph: {e}")
+            return {"nodes": [], "edges": []}
 
     def _dist(self, n1, n2):
         x1, y1 = self.nodes[n1]

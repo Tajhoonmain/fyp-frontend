@@ -33,21 +33,21 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     try {
       const directions = await getDirectionsFromMIDAS(currentPosition, destination.coordinate);
       
-      if (directions && directions.route) {
-        console.log('Using MIDAS backend directions:', directions.route);
-        // Use backend-calculated route
-        startSimulation(directions.route);
+      if (directions && directions.path) {
+        console.log('Using MIDAS backend directions:', directions.path);
+        // Don't use simulation - let real GPS/position tracking handle movement
+        // Just store the path for reference
+        console.log('Navigation started - using real location tracking');
       } else {
         console.log('MIDAS backend unavailable, using predefined waypoints');
         // Fallback to predefined waypoints
-        startSimulation(destination.waypoints);
+        console.log('Navigation started - using real location tracking');
       }
     } catch (error) {
       console.error('Failed to get MIDAS directions, using fallback:', error);
-      // Fallback to predefined waypoints
-      startSimulation(destination.waypoints);
+      console.log('Navigation started - using real location tracking');
     }
-  }, [currentPosition, startSimulation, getDirectionsFromMIDAS]);
+  }, [currentPosition, getDirectionsFromMIDAS]);
 
   const stopNavigation = useCallback(() => {
     setNavigationState({
@@ -60,7 +60,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
     stopSimulation();
   }, [stopSimulation]);
 
-  // Update navigation state based on position
+  // Update navigation state based on REAL position (no simulation)
   useEffect(() => {
     if (!navigationState.isNavigating || !navigationState.currentDestination) {
       return;
@@ -105,7 +105,7 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         }));
       }
     }
-  }, [currentPosition, navigationState]);
+  }, [currentPosition, navigationState.isNavigating, navigationState.currentDestination, navigationState.currentWaypointIndex]);
 
   return (
     <NavigationContext.Provider
