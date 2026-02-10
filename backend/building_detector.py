@@ -1,142 +1,71 @@
 """
-Building Detector - Determines which building localizer to use
-Routes image to appropriate CV localization module
+building_detector.py
+---------------------------------
+Offline building recognition using ORB descriptor matching
+Chooses which building localizer to run
 """
 
-import sys
-import os
-from typing import Dict, Optional, Any
+import cv2
+import numpy as np
+from pathlib import Path
 
-# Add Library to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), 'Library'))
+BASE_DIR = Path(__file__).resolve().parent
 
-try:
-    from LC_Lib import localize_library
-except ImportError as e:
-    print(f"Warning: Could not import LC_Lib: {e}")
-    localize_library = None
+# -------------------------------------------------
+# Load descriptor banks (LIGHTWEIGHT)
+# -------------------------------------------------
 
-class BuildingDetector:
+BUILDINGS = {
+    "library": {
+        "descriptors": np.load(
+            BASE_DIR / "localization" / "Library" / "descriptors_3d.npy"
+        )
+    },
+    "admin": {
+        "descriptors": np.load(
+            BASE_DIR / "localization" / "Admin" / "descriptors_3d.npy"
+        )
+    }
+}
+
+# -------------------------------------------------
+# ORB extractor
+# -------------------------------------------------
+
+orb = cv2.ORB_create(nfeatures=3000)
+matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+
+
+def detect_building(image_path: str) -> str | None:
     """
-    Detects which building the user is in and routes to appropriate localizer
-    """
-    
-    def __init__(self):
-        """Initialize building detector with available localizers"""
-        self.available_localizers = {
-            'Library': localize_library if localize_library else None,
-            # Add more building localizers here as you create them:
-            # 'Admin': localize_admin if localize_admin else None,
-            # 'FME': localize_fme if localize_fme else None,
-            # 'FCSE': localize_fcse if localize_fcse else None,
-        }
-        
-        print(f"Available localizers: {list(self.available_localizers.keys())}")
-    
-    def detect_and_localize(self, image_data: str) -> Dict[str, Any]:
-        """
-        Main function that detects building and localizes user position
-        
-        Args:
-            image_data: Base64 encoded image string
-            
-        Returns:
-            Dictionary with localization results
-        """
-        
-        # For now, we'll try Library first (you can expand this logic)
-        # In a full implementation, you'd use a building classifier first
-        
-        result = self._try_library_localization(image_data)
-        
-        if result and result.get('success', False):
-            return self._format_result('Library', result)
-        
-        # Fallback to default location
-        return self._fallback_result()
-    
-    def _try_library_localization(self, image_data: str) -> Optional[Dict]:
-        """Try Library localization"""
-        if not self.available_localizers.get('Library'):
-            print("Library localizer not available")
-            return None
-        
-        try:
-            # Convert base64 to temporary image file
-            import base64
-            import cv2
-            import numpy as np
-            
-            # Decode base64 image
-            if ',' in image_data:
-                image_data = image_data.split(',')[1]
-            
-            img_data = base64.b64decode(image_data)
-            nparr = np.frombuffer(img_data, np.uint8)
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            
-            # Save temporary image
-            temp_path = "temp_library_image.jpg"
-            cv2.imwrite(temp_path, img)
-            
-            # Use Library localizer
-            result = localize_library(temp_path)
-            
-            # Clean up
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
-            
-            return result
-            
-        except Exception as e:
-            print(f"Library localization error: {e}")
-            return None
-    
-    def _format_result(self, building: str, localization_result: Dict) -> Dict[str, Any]:
-        """Format successful localization result"""
-        return {
-            'success': True,
-            'building': building,
-            'node_id': localization_result.get('node_id', 'N64'),
-            'x': float(localization_result.get('map_x', 1240)),
-            'y': float(localization_result.get('map_y', 780)),
-            'confidence': float(localization_result.get('confidence', 0.8)),
-            'localization_method': f'{building}_CV'
-        }
-    
-    def _fallback_result(self) -> Dict[str, Any]:
-        """Return fallback result when localization fails"""
-        return {
-            'success': False,
-            'building': 'Unknown',
-            'node_id': None,
-            'x': 1200.0,  # Campus entrance
-            'y': 200.0,
-            'confidence': 0.0,
-            'localization_method': 'fallback'
-        }
-    
-    def get_available_buildings(self) -> list:
-        """Get list of available building localizers"""
-        return [name for name, localizer in self.available_localizers.items() if localizer is not None]
-
-# Global instance for easy access
-detector = BuildingDetector()
-
-def detect_building_and_localize(image_data: str) -> Dict[str, Any]:
-    """
-    Convenience function for building detection and localization
-    
-    Args:
-        image_data: Base64 encoded image string
-        
     Returns:
-        Dictionary with localization results
+        building name or None
     """
-    return detector.detect_and_localize(image_data)
 
-if __name__ == "__main__":
-    # Test the building detector
-    print("Building Detector Test")
-    print(f"Available buildings: {detector.get_available_buildings()}")
-    print("Ready to detect and localize!")
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        return None
+
+    kp, des = orb.detectAndCompute(img, None)
+    if des is None:
+        return None
+
+    best_building = None
+    best_score = 0
+
+    for name, data in BUILDINGS.items():
+        matches = matcher.match(des, data["descriptors"])
+
+        good_matches = [m for m in matches if m.distance < 50]
+
+        score = len(good_matches)
+
+        if score > best_score:
+            best_score = score
+            best_building = name
+
+    # Minimum confidence threshold
+    if best_score < 40:
+        return None
+
+    return best_building

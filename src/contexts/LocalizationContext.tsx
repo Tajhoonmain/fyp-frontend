@@ -143,32 +143,48 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
         // Use provided image data or mock data
         const imageToSend = imageData || "base64_encoded_image_data";
         
-        const response = await fetch('http://localhost:8000/api/localize', {
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('building', 'library'); // Default to library
+        formData.append('image', dataURLtoFile(imageToSend, 'capture.jpg'));
+        
+        const response = await fetch('http://localhost:8000/localize/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: imageToSend }),
+          body: formData, // Don't set Content-Type header for FormData
         });
 
         if (response.ok) {
           const data = await response.json();
-          setCaptureConfidence(data.confidence);
+          setCaptureConfidence(data.confidence || 0.8);
           
-          if (data.confidence >= 0.6) {
+          if (data.success) {
             // Use backend coordinates directly (already in local coordinate system)
             setCurrentPosition({ 
-              x: data.x, 
-              y: data.y 
+              x: data.map_x, 
+              y: data.map_y 
             });
             setLocalizationMode('MIDAS Classification');
             backendSuccess = true;
             
             console.log(`MIDAS Location: ${data.building}`);
-            console.log(`Local Position: x=${data.x}, y=${data.y}`);
-            console.log(`Node ID: ${data.node_id}`);
+            console.log(`Local Position: x=${data.map_x}, y=${data.map_y}`);
           }
         }
       } catch (backendError) {
         console.log('MIDAS backend not available, falling back to GPS');
+      }
+
+      // Helper function to convert dataURL to File
+      function dataURLtoFile(dataurl: string, filename: string): File {
+        const arr = dataurl.split(',');
+        const mime = arr[0].match(/:(.*?);/)[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--){
+          u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, {type:mime});
       }
 
       // Fallback to GPS if MIDAS failed
@@ -201,12 +217,12 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
   const getDirectionsFromMIDAS = useCallback(async (from: Coordinate, to: Coordinate) => {
     try {
       // Send coordinates directly to backend (already in local coordinate system)
-      const response = await fetch('http://localhost:8000/api/navigate', {
+      const response = await fetch('http://localhost:8000/navigate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           start_node: 'N64', // Use detected node from localization
-          destination: 'FCSE' // Use building name
+          destination_node: 'FCSE' // Use building name
         }),
       });
 

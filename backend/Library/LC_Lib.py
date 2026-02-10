@@ -27,7 +27,7 @@ KEYPOINTS_3D_PATH = THIS_DIR / "keypoints_3d.npy"
 DESCRIPTORS_3D_PATH = THIS_DIR / "descriptors_3d.npy"
 
 # Alignment data: Library → Campus map
-TRANSFORM_PATH = Path(__file__).parent.parent / "transform_library.json"
+TRANSFORM_PATH = Path(r"C:\WOLF\Private\VS_CODE\FYP_TEST\TEST_Hybrid\3D_construction\output_Library\transform_library.json")
 
 # =========================================================
 # CAMERA INTRINSICS (TEMP — replace with real calibration)
