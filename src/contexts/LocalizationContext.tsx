@@ -143,7 +143,7 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
         // Use provided image data or mock data
         const imageToSend = imageData || "base64_encoded_image_data";
         
-        const response = await fetch('http://localhost:8000/api/classify-location', {
+        const response = await fetch('http://localhost:8000/api/localize', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ image: imageToSend }),
@@ -156,14 +156,15 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
           if (data.confidence >= 0.6) {
             // Use backend coordinates directly (already in local coordinate system)
             setCurrentPosition({ 
-              x: data.coordinates.x, 
-              y: data.coordinates.y 
+              x: data.x, 
+              y: data.y 
             });
             setLocalizationMode('MIDAS Classification');
             backendSuccess = true;
             
-            console.log(`MIDAS Location: ${data.location_name}`);
-            console.log(`Local Position: x=${data.coordinates.x}, y=${data.coordinates.y}`);
+            console.log(`MIDAS Location: ${data.building}`);
+            console.log(`Local Position: x=${data.x}, y=${data.y}`);
+            console.log(`Node ID: ${data.node_id}`);
           }
         }
       } catch (backendError) {
@@ -200,12 +201,12 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
   const getDirectionsFromMIDAS = useCallback(async (from: Coordinate, to: Coordinate) => {
     try {
       // Send coordinates directly to backend (already in local coordinate system)
-      const response = await fetch('http://localhost:8000/api/get-directions', {
+      const response = await fetch('http://localhost:8000/api/navigate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          from: { x: from.x, y: from.y },
-          to: { x: to.x, y: to.y }
+          start_node: 'N64', // Use detected node from localization
+          destination: 'FCSE' // Use building name
         }),
       });
 
