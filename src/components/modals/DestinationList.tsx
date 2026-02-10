@@ -8,6 +8,7 @@ import { useNavigation } from '@/contexts/NavigationContext';
 interface DestinationListProps {
   isOpen: boolean;
   onClose: () => void;
+  onSelectDestination: (destination: Destination) => void;
 }
 
 export function DestinationList({ isOpen, onClose }: DestinationListProps) {

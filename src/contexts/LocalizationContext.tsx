@@ -36,11 +36,9 @@ export function LocalizationProvider({ children }: { children: React.ReactNode }
     const initializeGPS = async () => {
       try {
         await getCurrentGPSPosition();
-        // Start continuous GPS tracking
-        startGPSTracking();
+        console.log('GPS initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize GPS:', error);
-        // Fallback to simulated position
+        console.error('GPS initialization failed:', error);
         setLocalizationMode('Simulated');
       }
     };

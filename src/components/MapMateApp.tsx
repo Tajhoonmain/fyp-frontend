@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LocalizationProvider } from '@/contexts/LocalizationContext';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { ARView } from '@/components/ar/ARView';
@@ -14,20 +14,16 @@ import { AboutScreen } from '@/components/modals/AboutScreen';
 import { DestinationsButton } from '@/components/controls/DestinationsButton';
 import { InfoButton } from '@/components/controls/InfoButton';
 import { useLocalization } from '@/contexts/LocalizationContext';
+import { useNavigation } from '@/contexts/NavigationContext';
 
 // Inner component that can use the context
 function MapMateAppContent() {
+  const { currentPosition, localizationMode, captureAndLocalize } = useLocalization();
+  const { isNavigating, currentDestination, distanceToWaypoint, hasArrived, startNavigation, stopNavigation } = useNavigation();
   const [isDestinationListOpen, setIsDestinationListOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [showMap, setShowMap] = useState(true);
-  const { captureAndLocalize } = useLocalization();
-
-  // Debug logging
-  React.useEffect(() => {
-    console.log('MapMateApp mounted');
-    console.log('Environment:', import.meta.env);
-  }, []);
 
   const handleCameraCapture = (imageData: string) => {
     console.log('Camera capture triggered');
@@ -35,6 +31,12 @@ function MapMateAppContent() {
     captureAndLocalize(imageData);
     setIsCameraOpen(false);
   };
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('MapMateAppContent mounted');
+    console.log('Environment:', import.meta.env);
+  }, []);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#0A0E14]">
@@ -45,29 +47,31 @@ function MapMateAppContent() {
         <ARView />
       )}
 
-      {/* Navigation Overlays - only show in AR mode */}
-      {!showMap && (
-        <>
-          <DirectionArrow />
-          <DistanceLabel />
-        </>
-      )}
-
-      {/* Camera Capture Modal */}
-      {isCameraOpen && (
-        <CameraCapture
-          onClose={() => setIsCameraOpen(false)}
-          onCapture={handleCameraCapture}
-        />
-      )}
-
       {/* Status & Controls */}
       <TrackingIndicator />
+      
+      {/* Current Location Display */}
+      <div className="absolute top-20 left-6 z-20 px-4 py-3 rounded-lg backdrop-blur-[20px] max-w-xs">
+        <div className="text-xs font-mono text-[#00E5FF] mb-1">
+          CURRENT LOCATION
+        </div>
+        <div className="text-lg font-bold text-white">
+          {localizationMode === 'MIDAS Classification' 
+            ? `${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
+            : localizationMode === 'GPS' 
+            ? `GPS: ${currentPosition.x.toFixed(1)}, ${currentPosition.y.toFixed(1)}`
+            : `Sim: ${currentPosition.x.toFixed(0)}, ${currentPosition.y.toFixed(0)}`
+          }
+        </div>
+        <div className="text-xs text-[#00E5FF80]">
+          {localizationMode}
+        </div>
+      </div>
       
       {/* View Toggle Button */}
       <button
         onClick={() => setShowMap(!showMap)}
-        className="absolute top-4 left-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
+        className="absolute top-4 right-4 px-4 py-2 rounded-lg backdrop-blur-[20px] text-sm font-medium transition-all z-20"
         style={{
           background: 'rgba(15, 25, 35, 0.9)',
           border: '1px solid rgba(0, 229, 255, 0.4)',
@@ -100,19 +104,44 @@ function MapMateAppContent() {
           strokeLinejoin="round"
           viewBox="0 0 24 24"
         >
-          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-          <circle cx="12" cy="13" r="4" />
+          <path d="M23 19a2 2 0 0 1-2h-3a2 2 0 0 1-2 0 0V5a2 2 0 0 1 2h-3a2 2 0 0 1 2 0v14a2 2 0 0 1-2h-3a2 2 0 0 1-2z" />
         </svg>
       </button>
-      
-      <DebugOverlay />
 
-      {/* Modals */}
+      {/* Destination List Modal */}
       <DestinationList
         isOpen={isDestinationListOpen}
         onClose={() => setIsDestinationListOpen(false)}
+        onSelectDestination={(destination) => {
+          console.log('Selected destination:', destination);
+          startNavigation(destination);
+          setIsDestinationListOpen(false);
+        }}
       />
-      <AboutScreen isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+
+      {/* Camera Capture Modal */}
+      {isCameraOpen && (
+        <CameraCapture
+          onClose={() => setIsCameraOpen(false)}
+          onCapture={handleCameraCapture}
+        />
+      )}
+
+      {/* About Modal */}
+      {isAboutOpen && (
+        <AboutScreen
+          onClose={() => setIsAboutOpen(false)}
+        />
+      )}
+
+      {/* Distance Label */}
+      <DistanceLabel />
+
+      {/* Direction Arrow */}
+      <DirectionArrow />
+
+      {/* Debug Overlay */}
+      <DebugOverlay />
     </div>
   );
 }
