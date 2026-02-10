@@ -130,6 +130,7 @@ function MapMateAppContent() {
       {/* About Modal */}
       {isAboutOpen && (
         <AboutScreen
+          isOpen={isAboutOpen}
           onClose={() => setIsAboutOpen(false)}
         />
       )}
